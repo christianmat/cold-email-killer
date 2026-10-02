@@ -1,100 +1,70 @@
 # Cold Email Killer
 
-Moves cold sales emails out of your Gmail inbox into a **Cold Email** label, automatically, every 10 minutes. It never deletes anything.
+Auto-archives cold sales emails out of your Gmail inbox into a **Cold Email** label. Nothing is deleted.
 
-- **Runs in your own Google account** (Google Apps Script). Free, and it keeps running when your computer is off.
-- **No Google Cloud project, no OAuth setup, no tokens.** You click "Allow" once.
-- **Private:** no server in the middle. Your mail only goes to the AI provider *you* pick, using *your* key. With "rules only" it goes nowhere.
-- **Careful by default:** labels-only dry run for the first 24 h. Never touches people you've emailed, threads you've replied to, your coworkers, or anyone on your allowlist.
-- **Learns:** drag an email out of Cold Email and that sender is never flagged again.
+- Runs free inside **your own Google account** (Apps Script), every 10 minutes, even when your computer is off.
+- No server, no sign-up. Your email only goes to the AI provider you choose, with your own key.
+- Never touches people you've emailed, threads you've replied to, your coworkers, newsletters, or calendar invites.
+- Wrong call? Move the email back to your inbox and that sender is never flagged again.
 
-What it catches: sales pitches, fake "just bumping this" follow-ups, recruiter/staffing pitches, dev/SEO/lead-gen agencies, guest-post and backlink spam.
+## Setup (5 min)
 
-## Install (≈3 minutes)
+**Option A: let your AI agent do it.** Clone this repo and tell Claude Code (or any coding agent):
 
-1. **Copy the script.** Open the [template project](TEMPLATE_LINK), click **Overview (ⓘ)** in the left sidebar, then **Make a copy** (the copy icon, top right).
-2. **Deploy it.** In your copy, click **Deploy → New deployment → ⚙ → Web app** → **Deploy**. Click **Authorize access** and pick your Gmail account.
-   - Google will say *"Google hasn't verified this app"*. That's expected: it's your own private copy. Click **Advanced → Go to Cold Email Killer (unsafe)** → **Allow**.
-3. **Open the web app URL** it gives you (bookmark it), pick an AI provider, paste a key, then hit **Save & turn on**. Optionally click **Clean up last 14 days**.
+> Set up Cold Email Killer for me by following AGENTS.md.
 
-> **"Sorry, unable to open the file at this time"?** You're signed into several Google accounts and the browser picked the wrong one. Open the web app URL in an incognito window signed into only the account that owns the script.
+**Option B: do it yourself.** You need Node 20+.
 
-Done. Check the **Cold Email** label in Gmail tomorrow. Once dry run ends, matches get archived there.
+```bash
+git clone <this repo> && cd coldemailkiller
+npm install
+npx clasp login                     # sign in with the Gmail account to clean up
+npx clasp create --type standalone --title "Cold Email Killer" --rootDir dist
+mv dist/.clasp.json .clasp.json     # if clasp put it in dist/
+npm run push
+npx clasp deploy
+```
 
-### Which AI?
+> First time using clasp? Turn on the Apps Script API at https://script.google.com/home/usersettings.
 
-| Provider | Get a key | Notes |
+Then:
+
+1. Open `https://script.google.com/macros/s/<DEPLOYMENT_ID>/exec`, using the ID printed by `clasp deploy`. That's your settings page; bookmark it.
+2. Authorize. Google warns *"hasn't verified this app"*. That's expected for your own private script: click **Advanced → Go to Cold Email Killer → Allow**.
+3. Pick an AI provider, paste a key, click **Test AI key**, then **Save & turn on**.
+4. Optional: **Clean up last 14 days**.
+
+> **"Sorry, unable to open the file"?** You're signed into several Google accounts. Open the URL in an incognito window signed into only the right one.
+
+## AI providers
+
+| Provider | Key | Default model |
 |---|---|---|
-| None (rules only) | – | Catches mail sent by sales tools (Apollo, Outreach, Salesloft, Lemlist, Instantly, Smartlead…) and obvious templates. Zero data leaves Google. |
-| Google Gemini | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | Easiest key to get. ⚠️ On the **free tier Google may use inputs to improve its models**. Enable billing to opt out (still pennies). |
-| Anthropic Claude | [platform.claude.com](https://platform.claude.com/settings/keys) | Default `claude-opus-5-5`. Put `claude-haiku-4-5` in Model to save money. |
-| OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | Default `gpt-5-mini`. |
+| None | – | Rules only: catches mail from sales tools (Apollo, Outreach, Lemlist, Instantly…) |
+| Gemini | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | `gemini-3.8-flash` (the free tier may use your data for training) |
+| Claude | [platform.claude.com](https://platform.claude.com/settings/keys) | `claude-opus-5-5` |
+| OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | `gpt-5-mini` |
 
-The AI only sees emails the rules couldn't decide, minus the hard-keep cases above: sender, subject, and the first 2,000 characters of the body. There's a daily cap (default 200 calls).
+If a default model gets retired, type a current one in the **Model** field.
 
-**Model names change.** If a default stops working, type a current model name in the **Model** field.
+## How it works
 
-### Strictness
+- Every 10 min it checks only inbox emails that arrived since the last run, at most 50 per run. Each email is checked once.
+- Obvious cases are decided by rules: sales-tool fingerprints mean cold; people you know are kept. The AI only sees the rest: sender, subject, and the first 2,000 characters.
+- It moves an email only when it's confident: ≥ 90% (Conservative, the default), 75% (Balanced) or 60% (Aggressive).
+- The first 24h is a dry run: matches are labeled but stay in your inbox.
+- API errors never move mail.
 
-- **Conservative (default):** moves only at ≥ 90 % confidence
-- **Balanced:** ≥ 75 %
-- **Aggressive:** ≥ 60 %
-
-### Fallback install (if "Make a copy" doesn't show up)
-
-1. Go to [script.google.com](https://script.google.com) → **New project**, name it "Cold Email Killer".
-2. Replace `Code.gs` with the contents of [`dist/Code.js`](dist/Code.js) from the latest release.
-3. **+ → HTML**, name it `Settings`, and paste [`dist/Settings.html`](dist/Settings.html).
-4. **Project Settings → Show "appsscript.json"**, then paste [`dist/appsscript.json`](dist/appsscript.json).
-5. Continue from step 2 above.
-
-## How it decides
-
-```
-new inbox thread
-  │
-  ├─ hard keep? ── sent by you / you replied / you've emailed them before / same company domain /
-  │                allowlisted / calendar invite / newsletter / automated → leave alone
-  │
-  ├─ rules score ≥ 0.95? (sales-tool fingerprints in headers & links + template phrases) → Cold Email
-  │
-  ├─ AI configured & under daily cap? → AI verdict {cold, confidence, category, reason}
-  │                                      (rules-only mode uses the rule score instead)
-  │
-  └─ cold && confidence ≥ threshold → add "Cold Email" label + archive (label only in dry run)
-```
-
-- Errors (bad key, rate limits, timeouts) never move mail. The email is retried on the next run.
-- Every decision and its reason shows up on the settings page.
-
-## Uninstall
-
-Settings page → **Pause**. Or, in the Apps Script editor: **Triggers (⏰)** → delete the `run` trigger. Your **Cold Email** label and its emails stay where they are.
+To stop it: settings page → **Pause**.
 
 ## Develop
 
 ```bash
-npm install
-npm test            # unit tests (rules, providers, pipeline with a fake Gmail)
-npm run eval        # score fixtures with rules only
-PROVIDER=anthropic API_KEY=sk-ant-... npm run eval   # …or with a real model
-npm run build       # → dist/Code.js, dist/Settings.html, dist/appsscript.json
-
-# push to your own Apps Script project
-npx clasp login
-cp .clasp.json.example .clasp.json   # set scriptId
-npm run push
+npm test          # unit tests
+npm run eval      # score sample emails (PROVIDER=gemini API_KEY=... for AI)
+npm run push      # build + upload to your Apps Script project
 ```
 
-Layout:
-- `src/core/`: pure logic (rules, sequencer fingerprints, pipeline, storage). No Google APIs, fully unit-tested.
-- `src/providers/`: Gemini / Claude / OpenAI request builders and parsers.
-- `src/gas/main.ts`: Gmail, Properties and Trigger adapters, plus the functions Apps Script calls.
-- `src/ui/Settings.html`: the settings page.
-- `fixtures/emails.ts`: labeled sample emails used by tests and eval. PRs that add tricky examples are very welcome.
-
-Adding a sales tool fingerprint: add its sending/tracking domains to `src/core/fingerprints.ts`.
-
-## License
+`src/core` holds the logic (rules, pipeline), `src/providers` the AI calls, `src/gas` the Gmail glue, and `src/ui` the settings page. Add sales-tool domains in `src/core/fingerprints.ts`.
 
 MIT
