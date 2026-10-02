@@ -17,6 +17,8 @@ What it catches: sales pitches, fake "just bumping this" follow-ups, recruiter/s
    - Google will say *"Google hasn't verified this app"*. That's expected: it's your own private copy. Click **Advanced → Go to Cold Email Killer (unsafe)** → **Allow**.
 3. **Open the web app URL** it gives you (bookmark it), pick an AI provider, paste a key, then hit **Save & turn on**. Optionally click **Clean up last 14 days**.
 
+> **"Sorry, unable to open the file at this time"?** You're signed into several Google accounts and the browser picked the wrong one. Open the web app URL in an incognito window signed into only the account that owns the script.
+
 Done. Check the **Cold Email** label in Gmail tomorrow. Once dry run ends, matches get archived there.
 
 ### Which AI?

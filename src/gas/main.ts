@@ -230,8 +230,19 @@ export function apiSaveSettings(input: Partial<Config> & { apiKey?: string }) {
   return apiGetState();
 }
 
-export function apiTestKey(): { ok: boolean; message: string } {
-  const cfg = loadConfig(kv);
+/** Tests the provider/key/model currently in the form (falls back to saved values). */
+export function apiTestKey(input?: { provider?: Config['provider']; apiKey?: string; model?: string }): { ok: boolean; message: string } {
+  const saved = loadConfig(kv);
+  const provider = input?.provider ?? saved.provider;
+  const typedKey = input?.apiKey?.trim();
+  const useTyped = typedKey && !typedKey.startsWith('••••');
+  const cfg: Config = {
+    ...saved,
+    provider,
+    // A masked key in the form means "the saved one", but only if the provider didn't change.
+    apiKey: useTyped ? typedKey : provider === saved.provider ? saved.apiKey : '',
+    model: (input?.model ?? saved.model).trim(),
+  };
   const classify = makeClassifier(cfg);
   if (!classify) return { ok: false, message: 'Pick a provider and paste an API key first.' };
   const sample: Email = {

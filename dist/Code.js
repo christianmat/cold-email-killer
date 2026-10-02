@@ -833,8 +833,19 @@ Respond with JSON only: {"cold": boolean, "confidence": number 0-1 (how sure you
     installTrigger();
     return apiGetState();
   }
-  function apiTestKey() {
-    const cfg = loadConfig(kv);
+  function apiTestKey(input) {
+    var _a, _b, _c;
+    const saved = loadConfig(kv);
+    const provider = (_a = input == null ? void 0 : input.provider) != null ? _a : saved.provider;
+    const typedKey = (_b = input == null ? void 0 : input.apiKey) == null ? void 0 : _b.trim();
+    const useTyped = typedKey && !typedKey.startsWith("\u2022\u2022\u2022\u2022");
+    const cfg = {
+      ...saved,
+      provider,
+      // A masked key in the form means "the saved one", but only if the provider didn't change.
+      apiKey: useTyped ? typedKey : provider === saved.provider ? saved.apiKey : "",
+      model: ((_c = input == null ? void 0 : input.model) != null ? _c : saved.model).trim()
+    };
     const classify = makeClassifier(cfg);
     if (!classify) return { ok: false, message: "Pick a provider and paste an API key first." };
     const sample = {

@@ -246,8 +246,8 @@
       .catch(function (err) { busy(btn, false); toast((err && err.message) || String(err), 'bad'); });
   }
 
-  $('save').addEventListener('click', function () {
-    var payload = {
+  function formPayload() {
+    return {
       provider: $('provider').value,
       apiKey: $('apiKey').value,
       model: $('model').value,
@@ -257,10 +257,14 @@
       dailyLlmCap: Number($('cap').value),
       allowlist: $('allowlist').value.split(/[\n,]/)
     };
-    action(this, 'apiSaveSettings', payload, 'Saving', function (s) { render(s); toast('Saved. Checking every 10 minutes.', 'ok'); });
+  }
+
+  $('save').addEventListener('click', function () {
+    action(this, 'apiSaveSettings', formPayload(), 'Saving', function (s) { render(s); toast('Saved. Checking every 10 minutes.', 'ok'); });
   });
   $('test').addEventListener('click', function () {
-    action(this, 'apiTestKey', undefined, 'Testing (save first if you changed the key)', function (r) { toast(r.message, r.ok ? 'ok' : 'bad'); });
+    var f = formPayload();
+    action(this, 'apiTestKey', { provider: f.provider, apiKey: f.apiKey, model: f.model }, 'Testing', function (r) { toast(r.message, r.ok ? 'ok' : 'bad'); });
   });
   $('runNow').addEventListener('click', function () {
     action(this, 'apiRunNow', undefined, 'Running', function (r) { toast('Checked ' + r.scanned + ', moved ' + r.moved + '.', 'ok'); refresh(); });
