@@ -11,9 +11,9 @@ Auto-archives cold sales emails out of your Gmail inbox into a **Cold Email** la
 
 ## Setup (5 min)
 
-**Option A: let your AI agent do it.** Clone this repo and tell Claude Code (or any coding agent):
+**Option A: let your AI agent do it.** Paste this into Claude Code (or any coding agent):
 
-> Set up Cold Email Killer for me by following AGENTS.md.
+> Clone https://github.com/christianmat/cold-email-killer and set it up for me by following its AGENTS.md.
 
 **Option B: do it yourself.** You need Node 20+.
 
