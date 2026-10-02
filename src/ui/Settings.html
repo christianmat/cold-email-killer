@@ -1,0 +1,284 @@
+<!doctype html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root {
+    --bg: #f6f6f4; --card: #ffffff; --text: #1b1b1a; --muted: #6b6b66; --line: #e4e4df;
+    --accent: #d9480f; --accent-ink: #ffffff; --ok: #2b8a3e; --warn: #b8860b; --bad: #c92a2a;
+    --chip: #f0efe9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141413; --card: #1e1e1c; --text: #ecebe6; --muted: #9d9c95; --line: #2f2f2c;
+      --accent: #ff7a3d; --accent-ink: #141413; --ok: #51cf66; --warn: #fcc419; --bad: #ff6b6b;
+      --chip: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 12px; font-weight: 600; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+  label { display: block; font-weight: 600; margin: 12px 0 6px; font-size: 14px; }
+  label:first-of-type { margin-top: 0; }
+  input[type=text], input[type=password], input[type=number], select, textarea {
+    width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--bg); color: var(--text); font: inherit;
+  }
+  textarea { min-height: 80px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  .hint { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .hint a { color: var(--accent); }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { flex: 1; border: 0; background: transparent; color: var(--text); padding: 9px 6px; font: inherit; cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row > * { flex: 1 1 200px; }
+  .btn { border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 8px; padding: 10px 14px; font: inherit; font-weight: 600; cursor: pointer; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn:disabled { opacity: 0.55; cursor: wait; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .status { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: none; }
+  .dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+  .stat { background: var(--chip); border-radius: 8px; padding: 10px; }
+  .stat b { display: block; font-size: 20px; }
+  .stat span { color: var(--muted); font-size: 12px; }
+  .toast { margin-top: 10px; font-size: 14px; min-height: 1.5em; }
+  .toast.bad { color: var(--bad); } .toast.ok { color: var(--ok); }
+  ul.log { list-style: none; margin: 0; padding: 0; }
+  ul.log li { padding: 10px 0; border-top: 1px solid var(--line); }
+  ul.log li:first-child { border-top: 0; }
+  .log .top { display: flex; gap: 8px; align-items: baseline; justify-content: space-between; }
+  .log .subj { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .log .meta { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+  .tag { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 99px; background: var(--chip); white-space: nowrap; }
+  .tag.moved { background: var(--accent); color: var(--accent-ink); }
+  .tag.labeled { background: var(--warn); color: #1b1b1a; }
+  .check { display: flex; gap: 10px; align-items: flex-start; margin-top: 12px; font-weight: 400; }
+  .check input { margin-top: 4px; }
+  .empty { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Cold Email Killer</h1>
+  <p class="sub" id="who">Loading…</p>
+
+  <section class="card">
+    <div class="status"><span class="dot" id="dot"></span><strong id="headline">Loading…</strong></div>
+    <div class="hint" id="subline"></div>
+    <div class="stats">
+      <div class="stat"><b id="sMoved">–</b><span>moved, last run</span></div>
+      <div class="stat"><b id="sScanned">–</b><span>checked, last run</span></div>
+      <div class="stat"><b id="sLlm">–</b><span>AI calls today</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>1 · AI model</h2>
+    <label for="provider">Provider</label>
+    <select id="provider"></select>
+    <div id="keyBlock">
+      <label for="apiKey">API key</label>
+      <input id="apiKey" type="password" autocomplete="off" placeholder="Paste your key">
+      <div class="hint" id="keyHint"></div>
+      <label for="model">Model</label>
+      <input id="model" type="text" placeholder="">
+      <div class="hint">Leave blank for the default.</div>
+    </div>
+    <div class="hint" id="noneHint">Rules only: catches emails sent by sales tools (Apollo, Outreach, Lemlist…) and obvious templates. Add an AI key to catch the rest.</div>
+  </section>
+
+  <section class="card">
+    <h2>2 · How strict</h2>
+    <div class="seg" id="threshold">
+      <button data-v="conservative">Conservative</button>
+      <button data-v="balanced">Balanced</button>
+      <button data-v="aggressive">Aggressive</button>
+    </div>
+    <div class="hint" id="thresholdHint"></div>
+  </section>
+
+  <section class="card">
+    <h2>3 · Safety</h2>
+    <label>Dry run</label>
+    <div class="seg" id="dryRun">
+      <button data-v="auto">First 24h</button>
+      <button data-v="on">Always</button>
+      <button data-v="off">Off</button>
+    </div>
+    <div class="hint">In dry run, cold emails get the <b>Cold Email</b> label but stay in your inbox, so you can check its judgment first.</div>
+    <label class="check"><input type="checkbox" id="paused"> Pause everything</label>
+    <label for="cap">Max AI calls per day</label>
+    <input id="cap" type="number" min="0" step="10">
+  </section>
+
+  <section class="card">
+    <h2>4 · Never touch these senders</h2>
+    <textarea id="allowlist" placeholder="jane@example.com&#10;example.org"></textarea>
+    <div class="hint">One email or domain per line. When you drag an email out of Cold Email, its sender is added here automatically.</div>
+  </section>
+
+  <section class="card">
+    <div class="actions">
+      <button class="btn primary" id="save">Save &amp; turn on</button>
+      <button class="btn" id="test">Test AI key</button>
+      <button class="btn" id="runNow">Run now</button>
+      <button class="btn" id="sweep">Clean up last 14 days</button>
+    </div>
+    <div class="toast" id="toast"></div>
+  </section>
+
+  <section class="card">
+    <h2>Recent decisions</h2>
+    <ul class="log" id="log"><li class="empty">Nothing yet.</li></ul>
+  </section>
+</main>
+
+<script>
+  var state = null;
+  var THRESHOLD_HINTS = {
+    conservative: 'Only moves emails it is ≥90% sure about. Some cold emails slip through; real ones stay put.',
+    balanced: 'Moves at ≥75% confidence. Catches more, still careful.',
+    aggressive: 'Moves at ≥60% confidence. Check the Cold Email label now and then.'
+  };
+  var $ = function (id) { return document.getElementById(id); };
+
+  function call(fn, arg) {
+    return new Promise(function (resolve, reject) {
+      var r = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
+      arg === undefined ? r[fn]() : r[fn](arg);
+    });
+  }
+
+  function seg(id, value) {
+    Array.prototype.forEach.call($(id).querySelectorAll('button'), function (b) {
+      b.classList.toggle('on', b.dataset.v === value);
+    });
+  }
+  function segValue(id) {
+    var on = $(id).querySelector('button.on');
+    return on ? on.dataset.v : null;
+  }
+  ['threshold', 'dryRun'].forEach(function (id) {
+    $(id).addEventListener('click', function (e) {
+      if (e.target.dataset.v) { seg(id, e.target.dataset.v); if (id === 'threshold') $('thresholdHint').textContent = THRESHOLD_HINTS[e.target.dataset.v]; }
+    });
+  });
+
+  function toast(msg, kind) { var t = $('toast'); t.textContent = msg; t.className = 'toast ' + (kind || ''); }
+  function ago(ts) {
+    if (!ts) return 'never';
+    var s = Math.round((Date.now() - ts) / 1000);
+    if (s < 60) return s + 's ago'; if (s < 3600) return Math.round(s / 60) + 'm ago';
+    if (s < 86400) return Math.round(s / 3600) + 'h ago'; return Math.round(s / 86400) + 'd ago';
+  }
+  function esc(s) { return String(s || '').replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+  function renderProviderFields() {
+    var id = $('provider').value;
+    var p = (state.providers || []).filter(function (x) { return x.id === id; })[0];
+    $('keyBlock').style.display = p ? '' : 'none';
+    $('noneHint').style.display = p ? 'none' : '';
+    if (p) {
+      $('model').placeholder = p.defaultModel;
+      $('keyHint').innerHTML = 'Get one at <a href="' + p.keyUrl + '" target="_blank" rel="noopener">' + p.keyUrl.replace('https://', '') + '</a>. Stored only in your Google account.';
+    }
+  }
+
+  function render(s) {
+    state = s;
+    var c = s.config;
+    $('who').textContent = 'Signed in as ' + s.user;
+    var sel = $('provider');
+    if (!sel.options.length) {
+      sel.add(new Option('None (rules only)', 'none'));
+      s.providers.forEach(function (p) { sel.add(new Option(p.label, p.id)); });
+      sel.addEventListener('change', function () { $('apiKey').value = ''; $('model').value = ''; renderProviderFields(); });
+    }
+    sel.value = c.provider;
+    $('apiKey').value = c.apiKey;
+    $('model').value = c.model;
+    renderProviderFields();
+    seg('threshold', c.threshold); $('thresholdHint').textContent = THRESHOLD_HINTS[c.threshold];
+    seg('dryRun', c.dryRun);
+    $('paused').checked = c.paused;
+    $('cap').value = c.dailyLlmCap;
+    $('allowlist').value = c.allowlist.join('\n');
+
+    var st = s.status;
+    var dot = $('dot'), head = $('headline'), subl = $('subline');
+    if (!s.installed) { dot.className = 'dot'; head.textContent = 'Not running yet'; subl.textContent = 'Pick your settings, then hit Save & turn on.'; }
+    else if (c.paused) { dot.className = 'dot warn'; head.textContent = 'Paused'; subl.textContent = 'Nothing will be moved until you unpause.'; }
+    else if (s.dryRunActive) {
+      dot.className = 'dot warn'; head.textContent = 'Running · dry run';
+      subl.textContent = 'Labeling only, not archiving' + (c.dryRun === 'auto' && s.dryRunAutoEndsAt ? ' until ' + new Date(s.dryRunAutoEndsAt).toLocaleString() : '') + '. Last run ' + ago(st && st.at) + '.';
+    } else { dot.className = 'dot ok'; head.textContent = 'Running'; subl.textContent = 'Checks every 10 minutes. Last run ' + ago(st && st.at) + '.'; }
+    if (st && st.errors && st.errors.length && !c.paused) {
+      var real = st.errors.filter(function (e) { return e.indexOf('Learned') !== 0; });
+      if (real.length) { dot.className = 'dot bad'; subl.textContent += ' Last error: ' + real[0]; }
+    }
+    $('sMoved').textContent = st ? st.moved : '–';
+    $('sScanned').textContent = st ? st.scanned : '–';
+    $('sLlm').textContent = s.usage && s.usage.day === new Date().toISOString().slice(0, 10) ? s.usage.count : 0;
+
+    var log = $('log');
+    if (!s.decisions.length) { log.innerHTML = '<li class="empty">Nothing yet.</li>'; return; }
+    log.innerHTML = s.decisions.map(function (d) {
+      var tag = d.action === 'moved' ? '<span class="tag moved">Moved</span>' : d.action === 'labeled' ? '<span class="tag labeled">Labeled</span>' : '<span class="tag">Kept</span>';
+      return '<li><div class="top"><span class="subj">' + esc(d.subject || '(no subject)') + '</span>' + tag + '</div>' +
+        '<div class="meta">' + esc(d.fromEmail) + ' · ' + esc(d.category.replace('_', ' ')) + ' · ' + Math.round(d.confidence * 100) + '% · ' + esc(d.source) + ' · ' + ago(d.at) + '</div>' +
+        '<div class="meta">' + esc(d.reason) + '</div></li>';
+    }).join('');
+  }
+
+  function busy(btn, on) { Array.prototype.forEach.call(document.querySelectorAll('.btn'), function (b) { b.disabled = on; }); if (on) btn.dataset.label = btn.textContent; }
+
+  function action(btn, fn, arg, label, after) {
+    busy(btn, true); toast(label + '…');
+    return call(fn, arg).then(function (res) { busy(btn, false); return after(res); })
+      .catch(function (err) { busy(btn, false); toast((err && err.message) || String(err), 'bad'); });
+  }
+
+  $('save').addEventListener('click', function () {
+    var payload = {
+      provider: $('provider').value,
+      apiKey: $('apiKey').value,
+      model: $('model').value,
+      threshold: segValue('threshold'),
+      dryRun: segValue('dryRun'),
+      paused: $('paused').checked,
+      dailyLlmCap: Number($('cap').value),
+      allowlist: $('allowlist').value.split(/[\n,]/)
+    };
+    action(this, 'apiSaveSettings', payload, 'Saving', function (s) { render(s); toast('Saved. Checking every 10 minutes.', 'ok'); });
+  });
+  $('test').addEventListener('click', function () {
+    action(this, 'apiTestKey', undefined, 'Testing (save first if you changed the key)', function (r) { toast(r.message, r.ok ? 'ok' : 'bad'); });
+  });
+  $('runNow').addEventListener('click', function () {
+    action(this, 'apiRunNow', undefined, 'Running', function (r) { toast('Checked ' + r.scanned + ', moved ' + r.moved + '.', 'ok'); refresh(); });
+  });
+  $('sweep').addEventListener('click', function () {
+    var btn = this, total = { scanned: 0, moved: 0 }, rounds = 0;
+    function step() {
+      return action(btn, 'apiSweep', 14, 'Cleaning up (' + total.scanned + ' checked so far)', function (r) {
+        total.scanned += r.scanned; total.moved += r.moved;
+        if (!r.complete && r.scanned > 0 && ++rounds < 20) return step();
+        toast('Cleanup done: checked ' + total.scanned + ', moved ' + total.moved + '.', 'ok'); refresh();
+      });
+    }
+    step();
+  });
+
+  function refresh() { return call('apiGetState').then(render).catch(function (e) { toast(e.message || String(e), 'bad'); }); }
+  refresh();
+</script>
+</body>
+</html>
