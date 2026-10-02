@@ -18,7 +18,7 @@ export interface ProviderSpec {
 
 const gemini: ProviderSpec = {
   label: 'Google Gemini',
-  defaultModel: 'gemini-2.5-flash',
+  defaultModel: 'gemini-3.8-flash',
   keyUrl: 'https://aistudio.google.com/apikey',
   buildRequest(email, apiKey, model) {
     return {

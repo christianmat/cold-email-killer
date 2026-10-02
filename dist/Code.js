@@ -550,7 +550,7 @@ Respond with JSON only: {"cold": boolean, "confidence": number 0-1 (how sure you
   // src/providers/index.ts
   var gemini = {
     label: "Google Gemini",
-    defaultModel: "gemini-2.5-flash",
+    defaultModel: "gemini-3.8-flash",
     keyUrl: "https://aistudio.google.com/apikey",
     buildRequest(email, apiKey, model) {
       return {
