@@ -4,7 +4,7 @@
 
 Auto-archives cold sales emails out of your Gmail inbox into a **Cold Email** label.
 
-- Runs free inside **your own Google account** on Google Apps Script, every 10 minutes, even when your computer is off.
+- Runs freely and securely in **your own Google account** on Google Apps Script, every 10 minutes, even when your computer is off.
 - No server, no sign-up, no third-party service. The only outside call is to the AI provider you pick, with your own key.
 - Never touches people you've emailed, threads you've replied to, your coworkers, newsletters, or calendar invites.
 - Wrong call? Move the email back to your inbox and that sender is never flagged again.
