@@ -4,7 +4,7 @@ Give cold emails the cold shoulder.
 
 I get a pile of "quick question" and "just bumping this" emails every day. This script finds them in Gmail, labels them `Cold Email` and archives them, so my inbox only has things people actually wrote to me.
 
-It runs freely and securely in your own Google account on Google Apps Script. It checks every 10 minutes, even when your laptop is closed. Everything stays inside Google except the calls to whichever AI provider you choose, and those use your own key.
+It runs freely and securely in your own Google account on Google Apps Script. It checks every 10 minutes, even when your laptop is closed. For the AI part you can use Gemini, Claude or OpenAI with your own key, or point it at your own model (Ollama, LM Studio, vLLM, anything OpenAI-compatible) and keep the whole thing self-hosted.
 
 It leaves alone anyone you've emailed before, threads you've replied in, people at your company, newsletters and calendar invites. If it ever gets one wrong, move the email back to your inbox and it won't flag that sender again.
 
@@ -47,12 +47,17 @@ Then:
 | Gemini | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | `gemini-3.8-flash`. Heads up: on the free tier Google may train on what you send. |
 | Claude | [platform.claude.com](https://platform.claude.com/settings/keys) | `claude-opus-5-5` |
 | OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | `gpt-5-mini` |
+| Self-hosted | Optional, only if your server wants one | Whatever model your server runs, e.g. `llama3.3` |
 
 Models get retired now and then. If the default stops working, put a current model name in the Model field.
 
+### Using your own model
+
+Pick Self-hosted (OpenAI-compatible) and enter your server's URL and model name. Ollama, LM Studio, vLLM, llama.cpp and LocalAI all speak this API. Since the script runs on Google's servers, `localhost` won't reach your machine. Put the server behind a public HTTPS URL with something like Cloudflare Tunnel or Tailscale Funnel, and give it an API key if you can. With this setup your email goes from Gmail straight to hardware you control.
+
 ## How it works
 
-All the code runs on Google Apps Script inside your own Google account, with your Gmail permissions. There's nothing hosted anywhere else, and your email only goes to the AI provider you picked. Your settings and API key are saved in the script's properties in your account.
+All the code runs on Google Apps Script inside your own Google account, with your Gmail permissions. There's nothing hosted anywhere else, and your email only goes to the AI you picked, which can be a model on your own server. Your settings and API key are saved in the script's properties in your account.
 
 Every 10 minutes it looks at inbox emails that came in since the last run (up to 50 at a time) and checks each one once. Rules handle the obvious ones. Mail sent through sales tools is cold, and people you know get kept. Everything else goes to the AI, which sees the sender, subject and the first 2,000 characters of the body.
 
@@ -61,7 +66,7 @@ It only moves an email when it's confident enough. That's 90% on Conservative (t
 ## FAQ
 
 **Is it secure? Who can see my email?**
-Google, which has it already, and the AI provider you pick. The code lives in your own Apps Script project and only you can open the settings page. If you choose None, your email never leaves Google.
+Google, which has it already, and the AI you pick. The code lives in your own Apps Script project and only you can open the settings page. If you run your own model, the only other place your email goes is your own server. If you choose None, it never leaves Google.
 
 **Why does Google say the app isn't verified?**
 Google shows that for every personal script that hasn't gone through its review process. This is your own copy in your own account. Click Advanced, then Go to Cold Email Killer, then Allow.

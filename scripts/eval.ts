@@ -1,6 +1,7 @@
 // Score the fixture set with rules (and optionally a real LLM).
 //   npm run eval
 //   PROVIDER=anthropic API_KEY=sk-... [MODEL=...] npm run eval
+//   PROVIDER=compatible BASE_URL=http://localhost:11434 MODEL=llama3.3 npm run eval
 import { FIXTURES } from '../fixtures/emails';
 import { RULES_SURE, THRESHOLDS } from '../src/core/pipeline';
 import { hardKeepReason, scoreRules } from '../src/core/rules';
@@ -9,6 +10,8 @@ import { getProvider } from '../src/providers';
 
 const provider = getProvider((process.env.PROVIDER ?? 'none') as ProviderId);
 const apiKey = process.env.API_KEY ?? '';
+const baseUrl = process.env.BASE_URL ?? '';
+const useLlm = !!provider && (provider.keyRequired ? !!apiKey : !!baseUrl);
 const level = (process.env.THRESHOLD ?? 'conservative') as ThresholdLevel;
 const threshold = THRESHOLDS[level];
 const ctx = { userEmails: ['christian@frigade.com'], allowlist: [], hasSentTo: () => false };
@@ -26,8 +29,8 @@ for (const f of FIXTURES) {
     conf = r.score;
     cold = r.score > 0;
     why = `rules ${r.score.toFixed(2)} [${r.signals.join(', ')}]`;
-    if (r.score < RULES_SURE && provider && apiKey) {
-      const req = provider.buildRequest(f.email, apiKey, process.env.MODEL || provider.defaultModel);
+    if (r.score < RULES_SURE && provider && useLlm) {
+      const req = provider.buildRequest(f.email, { apiKey, model: process.env.MODEL || provider.defaultModel, baseUrl });
       const res = await fetch(req.url, {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...req.headers },
@@ -49,5 +52,5 @@ for (const f of FIXTURES) {
   const mark = moved === f.cold ? 'ok ' : moved ? 'FP!' : 'miss';
   console.log(`${mark}  ${f.name.padEnd(48)} ${why}`);
 }
-console.log(`\n${provider && apiKey ? provider.label : 'rules only'} @ ${level}: moved ${tp}/${tp + fn} cold, false positives ${fp}/${fp + tn}`);
+console.log(`\n${provider && useLlm ? provider.label : 'rules only'} @ ${level}: moved ${tp}/${tp + fn} cold, false positives ${fp}/${fp + tn}`);
 if (fp > 0) process.exitCode = 1;

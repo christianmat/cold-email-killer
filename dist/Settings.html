@@ -85,12 +85,17 @@
     <label for="provider">Provider</label>
     <select id="provider"></select>
     <div id="keyBlock">
-      <label for="apiKey">API key</label>
+      <div id="urlBlock">
+        <label for="baseUrl">Server URL</label>
+        <input id="baseUrl" type="text" placeholder="https://llm.example.com/v1">
+        <div class="hint">Any OpenAI-compatible server: Ollama, LM Studio, vLLM, llama.cpp. It has to be reachable over the internet (this runs on Google's servers, so localhost won't work). A Cloudflare Tunnel or Tailscale Funnel in front of your machine does the trick.</div>
+      </div>
+      <label for="apiKey" id="apiKeyLabel">API key</label>
       <input id="apiKey" type="password" autocomplete="off" placeholder="Paste your key">
       <div class="hint" id="keyHint"></div>
       <label for="model">Model</label>
       <input id="model" type="text" placeholder="">
-      <div class="hint">Leave blank for the default.</div>
+      <div class="hint" id="modelHint">Leave blank for the default.</div>
     </div>
     <div class="hint" id="noneHint">Rules only: catches emails sent by sales tools (Apollo, Outreach, Lemlist…) and obvious templates. Add an AI key to catch the rest.</div>
   </section>
@@ -187,8 +192,13 @@
     $('keyBlock').style.display = p ? '' : 'none';
     $('noneHint').style.display = p ? 'none' : '';
     if (p) {
-      $('model').placeholder = p.defaultModel;
-      $('keyHint').innerHTML = 'Get one at <a href="' + p.keyUrl + '" target="_blank" rel="noopener">' + p.keyUrl.replace('https://', '') + '</a>. Stored only in your Google account.';
+      $('urlBlock').style.display = p.needsBaseUrl ? '' : 'none';
+      $('apiKeyLabel').textContent = p.keyRequired ? 'API key' : 'API key (optional)';
+      $('model').placeholder = p.defaultModel || 'e.g. llama3.3';
+      $('modelHint').textContent = p.defaultModel ? 'Leave blank for the default.' : 'The model name your server uses.';
+      $('keyHint').innerHTML = p.keyUrl
+        ? 'Get one at <a href="' + p.keyUrl + '" target="_blank" rel="noopener">' + p.keyUrl.replace('https://', '') + '</a>. Stored only in your Google account.'
+        : 'Only if your server needs one. Sent as a Bearer token.';
     }
   }
 
@@ -200,11 +210,12 @@
     if (!sel.options.length) {
       sel.add(new Option('None (rules only)', 'none'));
       s.providers.forEach(function (p) { sel.add(new Option(p.label, p.id)); });
-      sel.addEventListener('change', function () { $('apiKey').value = ''; $('model').value = ''; renderProviderFields(); });
+      sel.addEventListener('change', function () { $('apiKey').value = ''; $('model').value = ''; $('baseUrl').value = ''; renderProviderFields(); });
     }
     sel.value = c.provider;
     $('apiKey').value = c.apiKey;
     $('model').value = c.model;
+    $('baseUrl').value = c.baseUrl || '';
     renderProviderFields();
     seg('threshold', c.threshold); $('thresholdHint').textContent = THRESHOLD_HINTS[c.threshold];
     seg('dryRun', c.dryRun);
@@ -251,6 +262,7 @@
       provider: $('provider').value,
       apiKey: $('apiKey').value,
       model: $('model').value,
+      baseUrl: $('baseUrl').value,
       threshold: segValue('threshold'),
       dryRun: segValue('dryRun'),
       paused: $('paused').checked,
@@ -264,7 +276,7 @@
   });
   $('test').addEventListener('click', function () {
     var f = formPayload();
-    action(this, 'apiTestKey', { provider: f.provider, apiKey: f.apiKey, model: f.model }, 'Testing', function (r) { toast(r.message, r.ok ? 'ok' : 'bad'); });
+    action(this, 'apiTestKey', { provider: f.provider, apiKey: f.apiKey, model: f.model, baseUrl: f.baseUrl }, 'Testing', function (r) { toast(r.message, r.ok ? 'ok' : 'bad'); });
   });
   $('runNow').addEventListener('click', function () {
     action(this, 'apiRunNow', undefined, 'Running', function (r) { toast('Checked ' + r.scanned + ', moved ' + r.moved + '.', 'ok'); refresh(); });

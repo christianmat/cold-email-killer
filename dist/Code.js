@@ -280,6 +280,7 @@ ${email.plainBody.slice(0, 4e3)}`;
     provider: "none",
     apiKey: "",
     model: "",
+    baseUrl: "",
     threshold: "conservative",
     dryRun: "auto",
     paused: false,
@@ -552,7 +553,9 @@ Respond with JSON only: {"cold": boolean, "confidence": number 0-1 (how sure you
     label: "Google Gemini",
     defaultModel: "gemini-3.8-flash",
     keyUrl: "https://aistudio.google.com/apikey",
-    buildRequest(email, apiKey, model) {
+    keyRequired: true,
+    needsBaseUrl: false,
+    buildRequest(email, { apiKey, model }) {
       return {
         url: `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
         headers: { "x-goog-api-key": apiKey },
@@ -582,7 +585,9 @@ Respond with JSON only: {"cold": boolean, "confidence": number 0-1 (how sure you
     label: "Anthropic Claude",
     defaultModel: "claude-opus-5-5",
     keyUrl: "https://platform.claude.com/settings/keys",
-    buildRequest(email, apiKey, model) {
+    keyRequired: true,
+    needsBaseUrl: false,
+    buildRequest(email, { apiKey, model }) {
       const modern = anthropicSupportsEffort(model);
       const headers = {
         "x-api-key": apiKey,
@@ -613,7 +618,9 @@ Respond with JSON only: {"cold": boolean, "confidence": number 0-1 (how sure you
     label: "OpenAI",
     defaultModel: "gpt-5-mini",
     keyUrl: "https://platform.openai.com/api-keys",
-    buildRequest(email, apiKey, model) {
+    keyRequired: true,
+    needsBaseUrl: false,
+    buildRequest(email, { apiKey, model }) {
       return {
         url: "https://api.openai.com/v1/chat/completions",
         headers: { Authorization: `Bearer ${apiKey}` },
@@ -638,7 +645,39 @@ Respond with JSON only: {"cold": boolean, "confidence": number 0-1 (how sure you
       return parseVerdict((_c = msg == null ? void 0 : msg.content) != null ? _c : "");
     }
   };
-  var PROVIDERS = { gemini, anthropic, openai };
+  function chatCompletionsUrl(baseUrl) {
+    const u = baseUrl.trim().replace(/\/+$/, "");
+    if (/\/chat\/completions$/.test(u)) return u;
+    if (/\/v\d+$/.test(u)) return `${u}/chat/completions`;
+    return `${u}/v1/chat/completions`;
+  }
+  var compatible = {
+    label: "Self-hosted (OpenAI-compatible)",
+    defaultModel: "",
+    keyUrl: "",
+    keyRequired: false,
+    needsBaseUrl: true,
+    buildRequest(email, { apiKey, model, baseUrl }) {
+      if (!baseUrl) throw new Error("Set the server URL for your self-hosted model");
+      if (!model) throw new Error("Set the model name for your self-hosted model");
+      const headers = { "ngrok-skip-browser-warning": "1" };
+      if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+      return {
+        url: chatCompletionsUrl(baseUrl),
+        headers,
+        body: {
+          model,
+          temperature: 0,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: userPrompt(email) }
+          ]
+        }
+      };
+    },
+    parseResponse: (body) => openai.parseResponse(body)
+  };
+  var PROVIDERS = { gemini, anthropic, openai, compatible };
   function getProvider(id) {
     var _a;
     return id === "none" ? null : (_a = PROVIDERS[id]) != null ? _a : null;
@@ -728,10 +767,12 @@ Respond with JSON only: {"cold": boolean, "confidence": number 0-1 (how sure you
   }
   function makeClassifier(cfg) {
     const provider = getProvider(cfg.provider);
-    if (!provider || !cfg.apiKey) return null;
+    if (!provider) return null;
+    if (provider.keyRequired && !cfg.apiKey) return null;
+    if (provider.needsBaseUrl && !cfg.baseUrl) return null;
     const model = cfg.model || provider.defaultModel;
     return (email) => {
-      const req = provider.buildRequest(email, cfg.apiKey, model);
+      const req = provider.buildRequest(email, { apiKey: cfg.apiKey, model, baseUrl: cfg.baseUrl });
       const res = UrlFetchApp.fetch(req.url, {
         method: "post",
         contentType: "application/json",
@@ -780,6 +821,11 @@ Respond with JSON only: {"cold": boolean, "confidence": number 0-1 (how sure you
   function triggerInstalled() {
     return ScriptApp.getProjectTriggers().some((t) => t.getHandlerFunction() === HANDLER);
   }
+  function isPrivateUrl(url) {
+    var _a, _b;
+    const host = ((_b = (_a = url.match(/^\w+:\/\/([^/:]+)/)) == null ? void 0 : _a[1]) != null ? _b : "").toLowerCase();
+    return /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|0\.0\.0\.0|\[?::1)|\.local$/.test(host);
+  }
   function maskKey(key) {
     return key ? `\u2022\u2022\u2022\u2022${key.slice(-4)}` : "";
   }
@@ -809,21 +855,29 @@ Respond with JSON only: {"cold": boolean, "confidence": number 0-1 (how sure you
       status: readJSON(kv, KEYS.status, null),
       decisions: readJSON(kv, KEYS.log, []),
       usage: readJSON(kv, KEYS.usage, { day: "", count: 0 }),
-      providers: Object.entries(PROVIDERS).map(([id, p]) => ({ id, label: p.label, defaultModel: p.defaultModel, keyUrl: p.keyUrl }))
+      providers: Object.entries(PROVIDERS).map(([id, p]) => ({
+        id,
+        label: p.label,
+        defaultModel: p.defaultModel,
+        keyUrl: p.keyUrl,
+        keyRequired: p.keyRequired,
+        needsBaseUrl: p.needsBaseUrl
+      }))
     };
   }
   function apiSaveSettings(input) {
-    var _a, _b, _c, _d, _e, _f, _g;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     const cfg = loadConfig(kv);
     const next = {
       ...cfg,
       provider: (_a = input.provider) != null ? _a : cfg.provider,
       model: ((_b = input.model) != null ? _b : cfg.model).trim(),
-      threshold: (_c = input.threshold) != null ? _c : cfg.threshold,
-      dryRun: (_d = input.dryRun) != null ? _d : cfg.dryRun,
-      paused: (_e = input.paused) != null ? _e : cfg.paused,
-      dailyLlmCap: Math.max(0, Math.floor(Number((_f = input.dailyLlmCap) != null ? _f : cfg.dailyLlmCap))),
-      allowlist: ((_g = input.allowlist) != null ? _g : cfg.allowlist).map((s) => s.trim().toLowerCase()).filter(Boolean)
+      baseUrl: ((_c = input.baseUrl) != null ? _c : cfg.baseUrl).trim(),
+      threshold: (_d = input.threshold) != null ? _d : cfg.threshold,
+      dryRun: (_e = input.dryRun) != null ? _e : cfg.dryRun,
+      paused: (_f = input.paused) != null ? _f : cfg.paused,
+      dailyLlmCap: Math.max(0, Math.floor(Number((_g = input.dailyLlmCap) != null ? _g : cfg.dailyLlmCap))),
+      allowlist: ((_h = input.allowlist) != null ? _h : cfg.allowlist).map((s) => s.trim().toLowerCase()).filter(Boolean)
     };
     if (input.apiKey && !input.apiKey.startsWith("\u2022\u2022\u2022\u2022")) next.apiKey = input.apiKey.trim();
     if (input.provider && input.provider !== cfg.provider && !input.apiKey) next.apiKey = "";
@@ -834,7 +888,7 @@ Respond with JSON only: {"cold": boolean, "confidence": number 0-1 (how sure you
     return apiGetState();
   }
   function apiTestKey(input) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e, _f;
     const saved = loadConfig(kv);
     const provider = (_a = input == null ? void 0 : input.provider) != null ? _a : saved.provider;
     const typedKey = (_b = input == null ? void 0 : input.apiKey) == null ? void 0 : _b.trim();
@@ -844,10 +898,17 @@ Respond with JSON only: {"cold": boolean, "confidence": number 0-1 (how sure you
       provider,
       // A masked key in the form means "the saved one", but only if the provider didn't change.
       apiKey: useTyped ? typedKey : provider === saved.provider ? saved.apiKey : "",
-      model: ((_c = input == null ? void 0 : input.model) != null ? _c : saved.model).trim()
+      model: ((_c = input == null ? void 0 : input.model) != null ? _c : saved.model).trim(),
+      baseUrl: ((_d = input == null ? void 0 : input.baseUrl) != null ? _d : saved.baseUrl).trim()
     };
+    if (((_e = getProvider(provider)) == null ? void 0 : _e.needsBaseUrl) && isPrivateUrl(cfg.baseUrl)) {
+      return { ok: false, message: "That URL is only reachable on your own network, and this script runs on Google's servers. Expose it with something like Cloudflare Tunnel or Tailscale Funnel and use the public HTTPS URL." };
+    }
     const classify = makeClassifier(cfg);
-    if (!classify) return { ok: false, message: "Pick a provider and paste an API key first." };
+    if (!classify) {
+      const needsUrl = (_f = getProvider(provider)) == null ? void 0 : _f.needsBaseUrl;
+      return { ok: false, message: needsUrl ? "Enter your server URL and model name first." : "Pick a provider and paste an API key first." };
+    }
     const sample = {
       threadId: "test",
       messageId: "test",

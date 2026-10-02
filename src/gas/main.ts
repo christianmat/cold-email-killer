@@ -106,10 +106,12 @@ function coldLabel(): GoogleAppsScript.Gmail.GmailLabel {
 
 function makeClassifier(cfg: Config): Classifier | null {
   const provider = getProvider(cfg.provider);
-  if (!provider || !cfg.apiKey) return null;
+  if (!provider) return null;
+  if (provider.keyRequired && !cfg.apiKey) return null;
+  if (provider.needsBaseUrl && !cfg.baseUrl) return null;
   const model = cfg.model || provider.defaultModel;
   return (email) => {
-    const req = provider.buildRequest(email, cfg.apiKey, model);
+    const req = provider.buildRequest(email, { apiKey: cfg.apiKey, model, baseUrl: cfg.baseUrl });
     const res = UrlFetchApp.fetch(req.url, {
       method: 'post',
       contentType: 'application/json',
@@ -164,6 +166,11 @@ function triggerInstalled(): boolean {
   return ScriptApp.getProjectTriggers().some((t) => t.getHandlerFunction() === HANDLER);
 }
 
+function isPrivateUrl(url: string): boolean {
+  const host = (url.match(/^\w+:\/\/([^/:]+)/)?.[1] ?? '').toLowerCase();
+  return /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|0\.0\.0\.0|\[?::1)|\.local$/.test(host);
+}
+
 function maskKey(key: string): string {
   return key ? `••••${key.slice(-4)}` : '';
 }
@@ -204,7 +211,14 @@ export function apiGetState() {
     status: readJSON<RunStatus | null>(kv, KEYS.status, null),
     decisions: readJSON<Decision[]>(kv, KEYS.log, []),
     usage: readJSON(kv, KEYS.usage, { day: '', count: 0 }),
-    providers: Object.entries(PROVIDERS).map(([id, p]) => ({ id, label: p.label, defaultModel: p.defaultModel, keyUrl: p.keyUrl })),
+    providers: Object.entries(PROVIDERS).map(([id, p]) => ({
+      id,
+      label: p.label,
+      defaultModel: p.defaultModel,
+      keyUrl: p.keyUrl,
+      keyRequired: p.keyRequired,
+      needsBaseUrl: p.needsBaseUrl,
+    })),
   };
 }
 
@@ -214,6 +228,7 @@ export function apiSaveSettings(input: Partial<Config> & { apiKey?: string }) {
     ...cfg,
     provider: input.provider ?? cfg.provider,
     model: (input.model ?? cfg.model).trim(),
+    baseUrl: (input.baseUrl ?? cfg.baseUrl).trim(),
     threshold: input.threshold ?? cfg.threshold,
     dryRun: input.dryRun ?? cfg.dryRun,
     paused: input.paused ?? cfg.paused,
@@ -231,7 +246,7 @@ export function apiSaveSettings(input: Partial<Config> & { apiKey?: string }) {
 }
 
 /** Tests the provider/key/model currently in the form (falls back to saved values). */
-export function apiTestKey(input?: { provider?: Config['provider']; apiKey?: string; model?: string }): { ok: boolean; message: string } {
+export function apiTestKey(input?: { provider?: Config['provider']; apiKey?: string; model?: string; baseUrl?: string }): { ok: boolean; message: string } {
   const saved = loadConfig(kv);
   const provider = input?.provider ?? saved.provider;
   const typedKey = input?.apiKey?.trim();
@@ -242,9 +257,16 @@ export function apiTestKey(input?: { provider?: Config['provider']; apiKey?: str
     // A masked key in the form means "the saved one", but only if the provider didn't change.
     apiKey: useTyped ? typedKey : provider === saved.provider ? saved.apiKey : '',
     model: (input?.model ?? saved.model).trim(),
+    baseUrl: (input?.baseUrl ?? saved.baseUrl).trim(),
   };
+  if (getProvider(provider)?.needsBaseUrl && isPrivateUrl(cfg.baseUrl)) {
+    return { ok: false, message: "That URL is only reachable on your own network, and this script runs on Google's servers. Expose it with something like Cloudflare Tunnel or Tailscale Funnel and use the public HTTPS URL." };
+  }
   const classify = makeClassifier(cfg);
-  if (!classify) return { ok: false, message: 'Pick a provider and paste an API key first.' };
+  if (!classify) {
+    const needsUrl = getProvider(provider)?.needsBaseUrl;
+    return { ok: false, message: needsUrl ? 'Enter your server URL and model name first.' : 'Pick a provider and paste an API key first.' };
+  }
   const sample: Email = {
     threadId: 'test',
     messageId: 'test',

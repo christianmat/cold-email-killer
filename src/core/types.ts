@@ -1,4 +1,4 @@
-export type ProviderId = 'none' | 'gemini' | 'anthropic' | 'openai';
+export type ProviderId = 'none' | 'gemini' | 'anthropic' | 'openai' | 'compatible';
 export type ThresholdLevel = 'conservative' | 'balanced' | 'aggressive';
 export type DryRunMode = 'auto' | 'on' | 'off';
 
@@ -47,6 +47,8 @@ export interface Config {
   provider: ProviderId;
   apiKey: string;
   model: string;
+  /** Base URL for OpenAI-compatible servers (Ollama, LM Studio, vLLM...). */
+  baseUrl: string;
   threshold: ThresholdLevel;
   dryRun: DryRunMode;
   paused: boolean;
@@ -59,6 +61,7 @@ export const DEFAULT_CONFIG: Config = {
   provider: 'none',
   apiKey: '',
   model: '',
+  baseUrl: '',
   threshold: 'conservative',
   dryRun: 'auto',
   paused: false,

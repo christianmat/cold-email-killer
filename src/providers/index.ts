@@ -7,11 +7,21 @@ export interface HttpRequest {
   body: unknown;
 }
 
+export interface ProviderOptions {
+  apiKey: string;
+  model: string;
+  baseUrl?: string;
+}
+
 export interface ProviderSpec {
   label: string;
   defaultModel: string;
   keyUrl: string;
-  buildRequest(email: Email, apiKey: string, model: string): HttpRequest;
+  /** False for self-hosted servers that don't need a key. */
+  keyRequired: boolean;
+  /** True if the user must supply a server URL. */
+  needsBaseUrl: boolean;
+  buildRequest(email: Email, opts: ProviderOptions): HttpRequest;
   /** Parse raw response body text into a verdict. Throws on refusal / malformed output. */
   parseResponse(body: string): Verdict;
 }
@@ -20,7 +30,9 @@ const gemini: ProviderSpec = {
   label: 'Google Gemini',
   defaultModel: 'gemini-3.8-flash',
   keyUrl: 'https://aistudio.google.com/apikey',
-  buildRequest(email, apiKey, model) {
+  keyRequired: true,
+  needsBaseUrl: false,
+  buildRequest(email, { apiKey, model }) {
     return {
       url: `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
       headers: { 'x-goog-api-key': apiKey },
@@ -49,7 +61,9 @@ const anthropic: ProviderSpec = {
   label: 'Anthropic Claude',
   defaultModel: 'claude-opus-5-5',
   keyUrl: 'https://platform.claude.com/settings/keys',
-  buildRequest(email, apiKey, model) {
+  keyRequired: true,
+  needsBaseUrl: false,
+  buildRequest(email, { apiKey, model }) {
     const modern = anthropicSupportsEffort(model);
     const headers: Record<string, string> = {
       'x-api-key': apiKey,
@@ -83,7 +97,9 @@ const openai: ProviderSpec = {
   label: 'OpenAI',
   defaultModel: 'gpt-5-mini',
   keyUrl: 'https://platform.openai.com/api-keys',
-  buildRequest(email, apiKey, model) {
+  keyRequired: true,
+  needsBaseUrl: false,
+  buildRequest(email, { apiKey, model }) {
     return {
       url: 'https://api.openai.com/v1/chat/completions',
       headers: { Authorization: `Bearer ${apiKey}` },
@@ -108,7 +124,44 @@ const openai: ProviderSpec = {
   },
 };
 
-export const PROVIDERS: Record<Exclude<ProviderId, 'none'>, ProviderSpec> = { gemini, anthropic, openai };
+/** Accepts `https://host`, `https://host/v1` or a full `/chat/completions` URL. */
+export function chatCompletionsUrl(baseUrl: string): string {
+  const u = baseUrl.trim().replace(/\/+$/, '');
+  if (/\/chat\/completions$/.test(u)) return u;
+  if (/\/v\d+$/.test(u)) return `${u}/chat/completions`;
+  return `${u}/v1/chat/completions`;
+}
+
+// Any server speaking the OpenAI Chat Completions API: Ollama, LM Studio, vLLM, llama.cpp, LocalAI...
+// No response_format: support for it varies between servers, and parseVerdict pulls the JSON out of plain text.
+const compatible: ProviderSpec = {
+  label: 'Self-hosted (OpenAI-compatible)',
+  defaultModel: '',
+  keyUrl: '',
+  keyRequired: false,
+  needsBaseUrl: true,
+  buildRequest(email, { apiKey, model, baseUrl }) {
+    if (!baseUrl) throw new Error('Set the server URL for your self-hosted model');
+    if (!model) throw new Error('Set the model name for your self-hosted model');
+    const headers: Record<string, string> = { 'ngrok-skip-browser-warning': '1' };
+    if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+    return {
+      url: chatCompletionsUrl(baseUrl),
+      headers,
+      body: {
+        model,
+        temperature: 0,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: userPrompt(email) },
+        ],
+      },
+    };
+  },
+  parseResponse: (body) => openai.parseResponse(body),
+};
+
+export const PROVIDERS: Record<Exclude<ProviderId, 'none'>, ProviderSpec> = { gemini, anthropic, openai, compatible };
 
 export function getProvider(id: ProviderId): ProviderSpec | null {
   return id === 'none' ? null : PROVIDERS[id] ?? null;
