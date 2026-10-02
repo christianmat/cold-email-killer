@@ -28,7 +28,7 @@ const wrappers = exportsList
   .map((name) => `function ${name}() { return ${GLOBAL}.${name}.apply(null, arguments); }`)
   .join('\n');
 
-const banner = `// Cold Email Killer (MIT)\n// Generated file. Edit src/ and run \`npm run build\`.\n`;
+const banner = `// Cold Email Killer — https://github.com/christianmat/cold-email-killer (MIT)\n// Generated file. Edit src/ and run \`npm run build\`.\n`;
 writeFileSync('dist/Code.js', `${banner}${result.outputFiles[0].text}\n${wrappers}\n`);
 copyFileSync('src/ui/Settings.html', 'dist/Settings.html');
 copyFileSync('src/appsscript.json', 'dist/appsscript.json');

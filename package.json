@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Auto-archive cold sales emails in Gmail. Runs free in your own Google account via Apps Script.",
   "license": "MIT",
+  "repository": "github:christianmat/cold-email-killer",
   "private": true,
   "type": "module",
   "scripts": {

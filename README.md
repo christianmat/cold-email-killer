@@ -1,5 +1,7 @@
 # Cold Email Killer
 
+**Give cold emails the cold shoulder.**
+
 Auto-archives cold sales emails out of your Gmail inbox into a **Cold Email** label. Nothing is deleted.
 
 - Runs free inside **your own Google account** (Apps Script), every 10 minutes, even when your computer is off.
@@ -16,7 +18,7 @@ Auto-archives cold sales emails out of your Gmail inbox into a **Cold Email** la
 **Option B: do it yourself.** You need Node 20+.
 
 ```bash
-git clone <this repo> && cd coldemailkiller
+git clone https://github.com/christianmat/cold-email-killer.git && cd cold-email-killer
 npm install
 npx clasp login                     # sign in with the Gmail account to clean up
 npx clasp create --type standalone --title "Cold Email Killer" --rootDir dist

@@ -1,4 +1,4 @@
-// Cold Email Killer (MIT)
+// Cold Email Killer — https://github.com/christianmat/cold-email-killer (MIT)
 // Generated file. Edit src/ and run `npm run build`.
 "use strict";
 var __CEK = (() => {
