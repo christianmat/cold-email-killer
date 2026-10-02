@@ -106,7 +106,43 @@ export const FIXTURES: Fixture[] = [
     }),
   },
 
+  {
+    name: 'API reseller sponsorship via your support@ group',
+    cold: true,
+    email: mk({
+      fromName: 'ByteRoute', fromEmail: 'hello@byteroute.example', subject: 'Partnership proposal for your project',
+      plainBody: "Hello team,\n\nThis is Mei with ByteRoute. We offer discounted access to the major LLM APIs behind one endpoint.\n\nWe would like to sponsor your docs for a month. Proposed terms: $100 flat, or $40 fixed plus 10% of net revenue from referred users.\n\nCould you share your monthly visitors and where most of your audience is located?\n\nA free credits account is already set up for you.\n\nMei",
+      headers: { 'list-id': '<support.frigade.com>', precedence: 'list', 'x-google-group-id': '123', 'mailing-list': 'list support@frigade.com; contact support+owners@frigade.com' },
+    }),
+  },
+  {
+    name: 'affiliate pitch where Groups rewrote From to your domain',
+    cold: true,
+    email: mk({
+      fromName: 'Lena', fromEmail: 'lena@adnetwork.example', subject: 'Monetize your traffic',
+      plainBody: "Hi there, I'm Lena from AdNetwork. We provide paid placement for developer tools. Would you be open to discussing a partnership? Our partners earn 30% commission on every signup.",
+      headers: { 'list-id': '<hello.frigade.com>', precedence: 'list', 'x-original-sender': 'lena@adnetwork.example' },
+    }),
+  },
+
   // ---------- Not cold ----------
+  {
+    name: 'customer writing to your support@ group',
+    cold: false,
+    email: mk({
+      fromEmail: 'ops@customer-two.example', subject: 'Checklist progress not saving',
+      plainBody: 'Hi, since yesterday our onboarding checklist resets for some users after refresh. We are on the React SDK v2. Can you take a look?',
+      headers: { 'list-id': '<support.frigade.com>', precedence: 'list', 'x-google-group-id': '123' },
+    }),
+  },
+  {
+    name: 'prospect introducing themselves with a buying question',
+    cold: false,
+    email: mk({
+      fromEmail: 'dana@acme-retail.example', subject: 'SSO on the enterprise plan?',
+      plainBody: "Hi, I'm Dana from Acme Retail. We're evaluating Frigade for our onboarding and wanted to know if SSO is included on the enterprise plan for about 200 seats.",
+    }),
+  },
   {
     name: 'customer support question',
     cold: false,

@@ -30,6 +30,22 @@ export function isAllowlisted(email: string, allowlist: string[]): boolean {
   });
 }
 
+function userDomains(userEmails: string[]): string[] {
+  return userEmails.map(domainOf).filter((d) => !PUBLIC_DOMAINS.has(d));
+}
+
+/**
+ * True when the message reached the user through a group/alias in their own domain
+ * (e.g. support@ as a Google Group). Groups add List-Id / Precedence: list to every
+ * message, so those headers say nothing about whether the *sender* is a newsletter.
+ */
+export function isOwnGroupDelivery(headers: Record<string, string>, userEmails: string[]): boolean {
+  const domains = userDomains(userEmails);
+  if (!domains.length) return !!headers['x-google-group-id'];
+  const listInfo = `${headers['list-id'] ?? ''} ${headers['mailing-list'] ?? ''}`.toLowerCase();
+  return domains.some((d) => listInfo.includes(d));
+}
+
 /** Returns a reason string if the email must never be touched, else null. Cheapest checks first. */
 export function hardKeepReason(email: Email, ctx: KeepContext): string | null {
   const from = email.fromEmail.toLowerCase();
@@ -39,11 +55,12 @@ export function hardKeepReason(email: Email, ctx: KeepContext): string | null {
   if (email.userInThread) return 'You already replied in this thread';
   if (email.isCalendarInvite) return 'Calendar invite';
   if (NOREPLY.test(from)) return 'Automated notification sender';
-  if (email.headers['list-id']) return 'Mailing list / newsletter (out of scope)';
+  const viaOwnGroup = isOwnGroupDelivery(email.headers, ctx.userEmails);
+  if (email.headers['list-id'] && !viaOwnGroup) return 'Mailing list / newsletter (out of scope)';
   const auto = email.headers['auto-submitted'];
   if (auto && auto.toLowerCase() !== 'no') return 'Auto-generated message';
   const prec = (email.headers['precedence'] ?? '').toLowerCase();
-  if (prec === 'bulk' || prec === 'list') return 'Bulk mail (out of scope)';
+  if ((prec === 'bulk' || prec === 'list') && !viaOwnGroup) return 'Bulk mail (out of scope)';
   const d = domainOf(from);
   if (!PUBLIC_DOMAINS.has(d) && ctx.userEmails.some((u) => domainOf(u) === d)) return 'Same domain as you';
   if (ctx.hasSentTo(from)) return 'You have emailed this sender before';
@@ -59,7 +76,8 @@ export interface RuleResult {
 interface Phrase {
   re: RegExp;
   w: number;
-  cat: Category;
+  /** null = raises the cold score but doesn't vote on the category. */
+  cat: Category | null;
   label: string;
 }
 
@@ -83,6 +101,13 @@ const PHRASES: Phrase[] = [
   { re: /\b(if (you'?re|you are) not (the right person|interested)|not interested\?|reply (with )?["']?(no|stop|unsubscribe))/i, w: 0.5, cat: 'sales', label: 'opt-out line' },
   { re: /\b(prefer not to|don'?t want to) (hear|receive)\b/i, w: 0.5, cat: 'sales', label: 'opt-out line' },
   { re: /\bcompanies like yours\b/i, w: 0.35, cat: 'sales', label: 'companies like yours' },
+  // Pitch structure (what a first-contact sales email is built from, regardless of product)
+  { re: /\b(i'?m|i am|my name is|this is) [a-z][\w'.-]*( [a-z][\w'.-]*)? (from|with|at|here from) [A-Z]/i, w: 0.25, cat: null, label: 'self-intro from a company' },
+  { re: /\bwe (provide|offer|build|deliver|specialize in|enable|power|are an? (leading|trusted|top))\b/i, w: 0.3, cat: null, label: 'vendor self-description' },
+  { re: /\b(pilot|free trial|trial account|test account|free credits?|demo account|discount|promo code|special offer)\b/i, w: 0.3, cat: null, label: 'offer / trial / credits' },
+  { re: /[$€£]\s?\d[\d,.]*\s*(k\b|fixed|flat|per|\/|usd|a month|monthly)|\b\d{1,3}% (commission|rev(enue)? share|of (net|revenue|sales))/i, w: 0.35, cat: 'partnership', label: 'deal terms / pricing' },
+  { re: /\b(sponsor(ship|ed|ing)?|advertis(e|ing|ement)|affiliate|paid placement|placement in your|media kit)\b/i, w: 0.4, cat: 'partnership', label: 'sponsorship / advertising ask' },
+  { re: /\b(explore|discuss) (a |an )?(potential |possible )?(partnership|collaboration|pilot|opportunit(y|ies)|synerg(y|ies))\b/i, w: 0.35, cat: 'partnership', label: 'explore an opportunity' },
   // Agency / freelancer
   { re: /\bwe help (companies|startups|saas|teams|founders|businesses)\b/i, w: 0.4, cat: 'agency', label: 'we help companies' },
   { re: /\b(offshore|nearshore|white[- ]label|dedicated (dev|development) team)\b/i, w: 0.45, cat: 'agency', label: 'outsourcing pitch' },
@@ -151,7 +176,7 @@ export function scoreRules(email: Email): RuleResult {
       seen.add(p.label);
       weights.push(p.w);
       signals.push(p.label);
-      bump(p.cat, p.w);
+      if (p.cat) bump(p.cat, p.w);
     }
   }
 

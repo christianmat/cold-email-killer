@@ -11,6 +11,8 @@ export const THRESHOLDS: Record<ThresholdLevel, number> = {
 /** Rule score at/above this moves the email without spending an LLM call. */
 export const RULES_SURE = 0.95;
 export const MAX_THREADS_PER_RUN = 50;
+/** Bump when rules or the prompt change: kept emails become eligible for a re-check (via sweep). */
+export const RULES_VERSION = '2';
 const TIME_BUDGET_MS = 4.5 * 60 * 1000;
 const DECISION_LOG_SIZE = 50;
 const SEEN_SIZE = 1000;
@@ -21,6 +23,7 @@ export const KEYS = {
   config: 'config',
   lastRun: 'lastRunEpoch',
   seen: 'seen',
+  seenVersion: 'seenVersion',
   log: 'decisions',
   moved: 'moved',
   usage: 'llmUsage',
@@ -194,7 +197,9 @@ export function run(deps: Deps, opts: { sinceEpochSec?: number } = {}): RunStatu
   const lastRun = Number(deps.kv.get(KEYS.lastRun) ?? 0);
   const since = opts.sinceEpochSec ?? (lastRun ? lastRun - 60 : Math.floor(started / 1000) - 2 * 86400);
 
-  const seen = readJSON<string[]>(deps.kv, KEYS.seen, []);
+  const sameRules = deps.kv.get(KEYS.seenVersion) === RULES_VERSION;
+  const seen = sameRules ? readJSON<string[]>(deps.kv, KEYS.seen, []) : [];
+  if (!sameRules) deps.kv.set(KEYS.seenVersion, RULES_VERSION);
   const seenSet = new Set(seen);
   const log = readJSON<Decision[]>(deps.kv, KEYS.log, []);
   const moved = readJSON<Moved[]>(deps.kv, KEYS.moved, []);

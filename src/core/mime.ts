@@ -24,6 +24,27 @@ export function parseHeaders(raw: string): Record<string, string> {
   return out;
 }
 
+/**
+ * Google Groups (and some aliases) may rewrite From to the group address, e.g.
+ * "'Jane' via Support <support@yourco.com>". Recover the real sender so the
+ * "same domain as you" check doesn't wave the email through.
+ */
+export function resolveSender(
+  from: { name: string; email: string },
+  headers: Record<string, string>,
+): { name: string; email: string } {
+  const original = headers['x-original-sender'] ?? headers['x-original-from'];
+  if (original) {
+    const o = parseAddress(original);
+    if (o.email.includes('@')) return { name: from.name.replace(/\s+via\s+.*$/i, '') || o.name, email: o.email };
+  }
+  if (/\svia\s/i.test(from.name) && headers['reply-to']) {
+    const r = parseAddress(headers['reply-to']);
+    if (r.email.includes('@') && r.email !== from.email) return { name: from.name.replace(/\s+via\s+.*$/i, ''), email: r.email };
+  }
+  return from;
+}
+
 export function isCalendarInvite(raw: string): boolean {
   return /content-type:\s*text\/calendar/i.test(raw) || /\bmethod=(request|publish)\b/i.test(raw);
 }

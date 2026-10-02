@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FIXTURES, mk } from '../fixtures/emails';
 import { RULES_SURE, THRESHOLDS } from '../src/core/pipeline';
-import { hardKeepReason, isAllowlisted, scoreRules } from '../src/core/rules';
+import { hardKeepReason, isAllowlisted, isOwnGroupDelivery, scoreRules } from '../src/core/rules';
 
 const ctx = { userEmails: ['christian@frigade.com'], allowlist: [] as string[], hasSentTo: () => false };
 
@@ -17,6 +17,14 @@ describe('hardKeepReason', () => {
     expect(hardKeepReason(mk({ fromEmail: 'eric@frigade.com' }), ctx)).toMatch(/Same domain/);
     const gmailUser = { ...ctx, userEmails: ['me@gmail.com'] };
     expect(hardKeepReason(mk({ fromEmail: 'stranger@gmail.com' }), gmailUser)).toBeNull();
+  });
+
+  it('treats mail through your own Google Group as normal mail, not a newsletter', () => {
+    const viaGroup = { 'list-id': '<support.frigade.com>', precedence: 'list' };
+    expect(isOwnGroupDelivery(viaGroup, ctx.userEmails)).toBe(true);
+    expect(hardKeepReason(mk({ headers: viaGroup }), ctx)).toBeNull();
+    // A real newsletter is still skipped.
+    expect(hardKeepReason(mk({ headers: { 'list-id': '<weekly.substack.com>', precedence: 'bulk' } }), ctx)).toMatch(/newsletter/);
   });
 
   it('keeps people you have emailed', () => {

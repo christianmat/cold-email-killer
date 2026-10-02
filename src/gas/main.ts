@@ -1,5 +1,5 @@
 // Apps Script entry points. Everything Google-specific lives here; logic lives in ../core.
-import { isCalendarInvite, parseAddress, parseHeaders } from '../core/mime';
+import { isCalendarInvite, parseAddress, parseHeaders, resolveSender } from '../core/mime';
 import {
   KEYS,
   type Classifier,
@@ -53,8 +53,9 @@ const gmail: MailPort = {
         if (!others.length) continue;
         const last = others[others.length - 1];
         if (isSeen(thread.getId(), last.getId())) continue;
-        const from = parseAddress(last.getFrom());
         const raw = last.getRawContent();
+        const headers = parseHeaders(raw);
+        const from = resolveSender(parseAddress(last.getFrom()), headers);
         out.push({
           threadId: thread.getId(),
           messageId: last.getId(),
@@ -63,10 +64,10 @@ const gmail: MailPort = {
           subject: last.getSubject() ?? '',
           plainBody: last.getPlainBody() ?? '',
           htmlBody: last.getBody() ?? '',
-          headers: parseHeaders(raw),
+          headers,
           userInThread: others.length !== msgs.length,
           isCalendarInvite: isCalendarInvite(raw),
-          threadMessageCount: others.filter((m) => parseAddress(m.getFrom()).email === from.email).length,
+          threadMessageCount: others.filter((m) => m.getFrom() === last.getFrom()).length,
         });
       }
       if (threads.length < PAGE) break;

@@ -109,6 +109,16 @@ describe('run', () => {
     expect(calls).toBe(1);
   });
 
+  it('re-checks previously seen mail after a rules update', () => {
+    mail.inbox = [pitch()];
+    let calls = 0;
+    const c = () => (calls++, { ...cold(0.1), cold: false });
+    run(deps(c));
+    kv.set(KEYS.seenVersion, 'old');
+    run(deps(c));
+    expect(calls).toBe(2);
+  });
+
   it('stops calling the LLM at the daily cap and falls back to rules', () => {
     setCfg({ dailyLlmCap: 1 });
     mail.inbox = [pitch(), pitch(), pitch()];

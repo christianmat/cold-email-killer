@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isCalendarInvite, parseAddress, parseHeaders } from '../src/core/mime';
+import { isCalendarInvite, parseAddress, parseHeaders, resolveSender } from '../src/core/mime';
 import { MemoryKV, readJSON, writeJSON } from '../src/core/storage';
 
 describe('mime', () => {
@@ -16,6 +16,14 @@ describe('mime', () => {
     expect(h.received).toContain('instantlymail');
     expect(h.received).toContain('b.google.com');
     expect(h.body).toBeUndefined();
+  });
+
+  it('recovers the real sender when Google Groups rewrites From', () => {
+    const rewritten = { name: "'Lena' via Support", email: 'support@frigade.com' };
+    expect(resolveSender(rewritten, { 'x-original-sender': 'lena@ads.example' }).email).toBe('lena@ads.example');
+    expect(resolveSender(rewritten, { 'reply-to': 'Lena <lena@ads.example>' })).toEqual({ name: "'Lena'", email: 'lena@ads.example' });
+    const normal = { name: 'Sam', email: 'sam@x.com' };
+    expect(resolveSender(normal, { 'reply-to': 'other@x.com' })).toBe(normal);
   });
 
   it('detects calendar invites', () => {
