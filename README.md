@@ -1,109 +1,106 @@
 # Cold Email Killer
 
-**Give cold emails the cold shoulder.**
+Give cold emails the cold shoulder.
 
-Auto-archives cold sales emails out of your Gmail inbox into a **Cold Email** label.
+I get a pile of "quick question" and "just bumping this" emails every day. This script finds them in Gmail, labels them `Cold Email` and archives them, so my inbox only has things people actually wrote to me.
 
-- Runs freely and securely in **your own Google account** on Google Apps Script, every 10 minutes, even when your computer is off.
-- No server, no sign-up, no third-party service. The only outside call is to the AI provider you pick, with your own key.
-- Never touches people you've emailed, threads you've replied to, your coworkers, newsletters, or calendar invites.
-- Wrong call? Move the email back to your inbox and that sender is never flagged again.
+It runs freely and securely in your own Google account on Google Apps Script. It checks every 10 minutes, even when your laptop is closed. Everything stays inside Google except the calls to whichever AI provider you choose, and those use your own key.
 
-## Setup (5 min)
+It leaves alone anyone you've emailed before, threads you've replied in, people at your company, newsletters and calendar invites. If it ever gets one wrong, move the email back to your inbox and it won't flag that sender again.
 
-**Option A: let your AI agent do it.** Paste this into Claude Code (or any coding agent):
+## Setup (about 5 minutes)
+
+### Option A: have your coding agent do it
+
+Paste this into Claude Code or any other coding agent:
 
 > Clone https://github.com/christianmat/cold-email-killer and set it up for me by following its AGENTS.md.
 
-**Option B: do it yourself.** You need Node 20+.
+It runs the commands for you. You only do the parts that need a browser (signing in, clicking Allow, pasting your API key).
+
+### Option B: do it yourself
+
+You'll need Node 20 or newer. If you've never used clasp before, turn on the Apps Script API at https://script.google.com/home/usersettings first.
 
 ```bash
 git clone https://github.com/christianmat/cold-email-killer.git && cd cold-email-killer
 npm install
-npx clasp login                     # sign in with the Gmail account to clean up
+npx clasp login                     # use the Gmail account you want cleaned up
 npx clasp create --type standalone --title "Cold Email Killer" --rootDir dist
-mv dist/.clasp.json .clasp.json     # if clasp put it in dist/
+mv dist/.clasp.json .clasp.json     # only if clasp put it in dist/
 npm run push
 npx clasp deploy
 ```
 
-> First time using clasp? Turn on the Apps Script API at https://script.google.com/home/usersettings.
-
 Then:
 
-1. Open `https://script.google.com/macros/s/<DEPLOYMENT_ID>/exec`, using the ID printed by `clasp deploy`. That's your settings page; bookmark it.
-2. Authorize. Google warns *"hasn't verified this app"*. That's expected for your own private script: click **Advanced → Go to Cold Email Killer → Allow**.
-3. Pick an AI provider, paste a key, click **Test AI key**, then **Save & turn on**.
-4. Optional: **Clean up last 14 days**.
-
-> **"Sorry, unable to open the file"?** You're signed into several Google accounts. Open the URL in an incognito window signed into only the right one.
+1. Open `https://script.google.com/macros/s/<DEPLOYMENT_ID>/exec`, with the ID that `clasp deploy` printed. This is your settings page, so bookmark it.
+2. Authorize it. Google will warn that it "hasn't verified this app", which happens with any personal script. Click Advanced, then Go to Cold Email Killer, then Allow.
+3. Pick an AI provider, paste your key, hit Test AI key, then Save & turn on.
+4. If you want to clear out the backlog, hit Clean up last 14 days.
 
 ## AI providers
 
-| Provider | Key | Default model |
+| Provider | Where to get a key | Default model |
 |---|---|---|
-| None | – | Rules only: catches mail from sales tools (Apollo, Outreach, Lemlist, Instantly…) |
-| Gemini | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | `gemini-3.8-flash` (the free tier may use your data for training) |
+| None | | Rules only. Catches mail sent through sales tools like Apollo, Outreach, Lemlist and Instantly. |
+| Gemini | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | `gemini-3.8-flash`. Heads up: on the free tier Google may train on what you send. |
 | Claude | [platform.claude.com](https://platform.claude.com/settings/keys) | `claude-opus-5-5` |
 | OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | `gpt-5-mini` |
 
-If a default model gets retired, type a current one in the **Model** field.
+Models get retired now and then. If the default stops working, put a current model name in the Model field.
 
 ## How it works
 
-All code runs on **Google Apps Script inside your Google account**, under your Gmail permissions. There's no backend and no hosted service, and nobody else gets your data. Settings, including your API key, are stored in your account's script properties.
+All the code runs on Google Apps Script inside your own Google account, with your Gmail permissions. There's nothing hosted anywhere else, and your email only goes to the AI provider you picked. Your settings and API key are saved in the script's properties in your account.
 
-- Every 10 min it checks only inbox emails that arrived since the last run, at most 50 per run. Each email is checked once.
-- Obvious cases are decided by rules: sales-tool fingerprints mean cold; people you know are kept. The AI only sees the rest: sender, subject, and the first 2,000 characters.
-- It moves an email only when it's confident: ≥ 90% (Conservative, the default), 75% (Balanced) or 60% (Aggressive).
-- The first 24h is a dry run: matches are labeled but stay in your inbox.
-- API errors never move mail.
+Every 10 minutes it looks at inbox emails that came in since the last run (up to 50 at a time) and checks each one once. Rules handle the obvious ones. Mail sent through sales tools is cold, and people you know get kept. Everything else goes to the AI, which sees the sender, subject and the first 2,000 characters of the body.
 
-To stop it: settings page → **Pause**.
+It only moves an email when it's confident enough. That's 90% on Conservative (the default), 75% on Balanced and 60% on Aggressive. For the first 24 hours it runs in dry-run mode, which means it adds the label but leaves the email in your inbox so you can check its work. If the AI call fails, the email stays put and gets retried on the next run.
 
 ## FAQ
 
 **Is it secure? Who can see my email?**
-Only Google, which already has it, and the AI provider you choose. The code runs in your own Apps Script project, and the settings page is restricted to you. With **None (rules only)**, nothing leaves Google at all.
+Google, which has it already, and the AI provider you pick. The code lives in your own Apps Script project and only you can open the settings page. If you choose None, your email never leaves Google.
 
-**Why does Google say "this app isn't verified"?**
-Google shows this for every personal script that hasn't been through its review. It's your own copy, running in your own account. Click **Advanced → Go to Cold Email Killer → Allow**.
+**Why does Google say the app isn't verified?**
+Google shows that for every personal script that hasn't gone through its review process. This is your own copy in your own account. Click Advanced, then Go to Cold Email Killer, then Allow.
 
 **Why does it ask for full Gmail access?**
-Apps Script's Gmail service only comes with one permission level. The code only reads, labels and archives emails. Check `src/gas/main.ts`.
+Apps Script's Gmail service only has one permission level. The code reads, labels and archives emails and that's it. You can check for yourself in `src/gas/main.ts`.
 
 **Does my computer need to be on?**
-No. Google runs it on a timer.
+Nope. Google runs it on a timer.
 
 **Does it re-check emails it has already seen?**
-No. Each run only looks at emails that arrived since the last run, at most 50 per run, and it remembers what it has checked. The first run looks back 2 days; **Clean up last 14 days** goes further.
+No. Each run only looks at what arrived since the last one, and it keeps track of what it has already checked. The very first run looks back 2 days. The Clean up last 14 days button is the only way to go further back.
 
-**Where do cold emails go?**
-They're archived with the **Cold Email** label. Click that label in Gmail's sidebar, or search `label:cold-email`.
+**Where do the cold emails go?**
+Into the Cold Email label. Click it in Gmail's sidebar or search for `label:cold-email`.
 
 **What if it flags a real email?**
-Move it back to your inbox, or remove the label. That sender is added to the allowlist on the next run and won't be flagged again. You can also edit the allowlist on the settings page.
+Move it back to your inbox or take the label off. On the next run that sender gets added to your allowlist. You can also edit the allowlist yourself on the settings page.
 
 **What does it cost?**
-Apps Script is free. AI costs depend on your provider. Usually it's a few cents a day, because most emails are decided by rules or skipped, and there's a daily cap (default 200 AI calls).
+Apps Script is free. The AI part depends on your provider, but it's usually a few cents a day, because the rules handle a lot of mail before the AI ever sees it. There's also a daily cap of 200 AI calls by default.
 
-**Do I need clasp / Node forever?**
-No, only for setup and updates. After that, everything runs in Google.
+**Do I need Node and clasp after setup?**
+Only to install updates. Once it's deployed, it runs entirely in Google.
 
-**"Sorry, unable to open the file at this time"?**
-You're signed into several Google accounts. Open the settings URL in an incognito window signed into only the right one.
+**I get "Sorry, unable to open the file at this time".**
+That happens when you're signed into more than one Google account. Open the settings URL in an incognito window and sign in with just the account that owns the script.
 
-**How do I stop it?**
-Settings page → **Pause**. To remove it completely, delete the project at [script.google.com](https://script.google.com).
+**How do I turn it off?**
+Hit Pause on the settings page. To get rid of it for good, delete the project at [script.google.com](https://script.google.com).
 
-## Develop
+## Development
 
 ```bash
 npm test          # unit tests
-npm run eval      # score sample emails (PROVIDER=gemini API_KEY=... for AI)
-npm run push      # build + upload to your Apps Script project
+npm run eval      # score the sample emails (add PROVIDER=gemini API_KEY=... to include the AI)
+npm run push      # build and upload to your Apps Script project
 ```
 
-`src/core` holds the logic (rules, pipeline), `src/providers` the AI calls, `src/gas` the Gmail glue, and `src/ui` the settings page. Add sales-tool domains in `src/core/fingerprints.ts`.
+The logic (rules and pipeline) is in `src/core`, the AI calls are in `src/providers`, the Gmail code is in `src/gas`, and the settings page is `src/ui/Settings.html`. If a sales tool is slipping through, add its domains to `src/core/fingerprints.ts`.
 
-MIT
+MIT licensed.
