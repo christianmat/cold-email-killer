@@ -4,7 +4,7 @@ You are helping a user install Cold Email Killer into their own Google account. 
 
 ## Steps
 
-1. **Get the code.** If you're not already in this repo, run `git clone https://github.com/christianmat/cold-email-killer.git && cd cold-email-killer`. Check Node with `node -v` (v20 or later), then run `npm install`.
+1. **Get the code.** If you're not already in this repo, run `git clone https://github.com/christianmat/cold-email-killer.git && cd cold-email-killer`. Check Node with `node -v` (v22 or later), then run `npm install`.
 2. **Apps Script API.** Ask the user to turn it on at https://script.google.com/home/usersettings and wait for them to confirm.
 3. **Log in.** The user must run `npx clasp login` themselves, because it opens a browser. In Claude Code, tell them to type `! npx clasp login`. They must sign in with the **Gmail account they want cleaned**. "Select all" on the consent screen is fine.
 4. **Create the project.**

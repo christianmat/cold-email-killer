@@ -20,7 +20,7 @@ It runs the commands for you. You only do the parts that need a browser (signing
 
 ### Option B: do it yourself
 
-You'll need Node 20 or newer. If you've never used clasp before, turn on the Apps Script API at https://script.google.com/home/usersettings first.
+You'll need Node 22 or newer. If you've never used clasp before, turn on the Apps Script API at https://script.google.com/home/usersettings first.
 
 ```bash
 git clone https://github.com/christianmat/cold-email-killer.git && cd cold-email-killer

@@ -13,7 +13,7 @@ class FakeMail implements MailPort {
   marked: { threadId: string; archive: boolean }[] = [];
   lastSince = 0;
   userEmails() {
-    return ['me@frigade.com'];
+    return ['me@acme.dev'];
   }
   listCandidates(since: number, max: number, isSeen: (t: string, m: string) => boolean) {
     this.lastSince = since;

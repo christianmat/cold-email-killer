@@ -19,7 +19,7 @@ describe('mime', () => {
   });
 
   it('recovers the real sender when Google Groups rewrites From', () => {
-    const rewritten = { name: "'Lena' via Support", email: 'support@frigade.com' };
+    const rewritten = { name: "'Lena' via Support", email: 'support@acme.dev' };
     expect(resolveSender(rewritten, { 'x-original-sender': 'lena@ads.example' }).email).toBe('lena@ads.example');
     expect(resolveSender(rewritten, { 'reply-to': 'Lena <lena@ads.example>' })).toEqual({ name: "'Lena'", email: 'lena@ads.example' });
     const normal = { name: 'Sam', email: 'sam@x.com' };

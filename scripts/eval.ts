@@ -14,7 +14,7 @@ const baseUrl = process.env.BASE_URL ?? '';
 const useLlm = !!provider && (provider.keyRequired ? !!apiKey : !!baseUrl);
 const level = (process.env.THRESHOLD ?? 'conservative') as ThresholdLevel;
 const threshold = THRESHOLDS[level];
-const ctx = { userEmails: ['christian@frigade.com'], allowlist: [], hasSentTo: () => false };
+const ctx = { userEmails: ['you@acme.dev'], allowlist: [], hasSentTo: () => false };
 
 let tp = 0, fp = 0, fn = 0, tn = 0;
 for (const f of FIXTURES) {

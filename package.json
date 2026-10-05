@@ -2,10 +2,27 @@
   "name": "coldemailkiller",
   "version": "0.1.0",
   "description": "Auto-archive cold sales emails in Gmail. Runs free in your own Google account via Apps Script.",
+  "keywords": [
+    "gmail",
+    "cold-email",
+    "spam-filter",
+    "email-filter",
+    "google-apps-script",
+    "apps-script",
+    "inbox-zero",
+    "sales-emails",
+    "llm",
+    "ollama",
+    "self-hosted",
+    "privacy"
+  ],
   "license": "MIT",
   "repository": "github:christianmat/cold-email-killer",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
     "build": "node scripts/build.mjs",
     "test": "vitest run",
@@ -15,12 +32,12 @@
     "deploy": "npm run push && clasp deploy --description \"$(date +%F)\""
   },
   "devDependencies": {
-    "@google/clasp": "^2.4.2",
+    "@google/clasp": "^3.4.1",
     "@types/google-apps-script": "^1.0.83",
     "@types/node": "^26.6.4",
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.28.2",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
-    "vitest": "^2.1.0"
+    "vitest": "^5.0.3"
   }
 }

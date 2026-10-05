@@ -33,7 +33,7 @@ export const FIXTURES: Fixture[] = [
     cold: true,
     email: mk({
       fromName: 'Tyler Brooks', fromEmail: 'tyler@pipelinehq.co', subject: 'Quick question',
-      plainBody: "Hi Christian,\n\nI saw that you're hiring engineers. We help SaaS companies like yours cut onboarding time by 40%.\n\nWorth a 15 minute chat next week?\n\nTyler",
+      plainBody: "Hi Sam,\n\nI saw that you're hiring engineers. We help SaaS companies like yours cut onboarding time by 40%.\n\nWorth a 15 minute chat next week?\n\nTyler",
       headers: { 'message-id': '<abc123@mail.apollo.io>' },
     }),
   },
@@ -41,9 +41,9 @@ export const FIXTURES: Fixture[] = [
     name: 'lemlist tracked link',
     cold: true,
     email: mk({
-      fromEmail: 'sara@growthlabs.io', subject: 'Idea for Frigade',
-      plainBody: 'Hey Christian, loved what you are building. We help startups turn product tours into pipeline. Open to a quick call?',
-      htmlBody: '<p>Hey Christian</p><a href="https://track.lemlist.com/abc">see how</a>',
+      fromEmail: 'sara@growthlabs.io', subject: 'Idea for Acme',
+      plainBody: 'Hey Sam, loved what you are building. We help startups turn product tours into pipeline. Open to a quick call?',
+      htmlBody: '<p>Hey Sam</p><a href="https://track.lemlist.com/abc">see how</a>',
     }),
   },
   {
@@ -59,7 +59,7 @@ export const FIXTURES: Fixture[] = [
     name: 'offshore agency no tool',
     cold: true,
     email: mk({
-      fromEmail: 'raj@codecraft-solutions.com', subject: 'Dedicated dev team for Frigade',
+      fromEmail: 'raj@codecraft-solutions.com', subject: 'Dedicated dev team for Acme',
       plainBody: 'Hello,\n\nWe are a white-label development company. We provide a dedicated development team at 1/3 the cost. We help startups ship faster.\n\nCan we book a call this week?\n\nIf you are not the right person, please point me to who is.',
     }),
   },
@@ -76,7 +76,7 @@ export const FIXTURES: Fixture[] = [
     cold: true,
     email: mk({
       fromEmail: 'nina@toptalentbridge.com', subject: 'Hire senior engineers in 2 weeks',
-      plainBody: 'Hi Christian, we help founders hire pre-vetted engineers from LATAM in under two weeks. Open to a 15 min call this week? Reply "no" if you prefer not to hear from me.',
+      plainBody: 'Hi Sam, we help founders hire pre-vetted engineers from LATAM in under two weeks. Open to a 15 min call this week? Reply "no" if you prefer not to hear from me.',
     }),
   },
   {
@@ -84,7 +84,7 @@ export const FIXTURES: Fixture[] = [
     cold: true,
     email: mk({
       fromEmail: 'jordan@salesboost.io', subject: 'Following up',
-      plainBody: "Hi Christian, following up on my previous note. I didn't hear back - who's the right person to talk to about outbound at Frigade?",
+      plainBody: "Hi Sam, following up on my previous note. I didn't hear back - who's the right person to talk to about outbound at Acme?",
       threadMessageCount: 2,
     }),
   },
@@ -92,8 +92,8 @@ export const FIXTURES: Fixture[] = [
     name: 'outreach.io headers',
     cold: true,
     email: mk({
-      fromEmail: 'brian@datavendor.com', subject: 'Frigade + DataVendor',
-      plainBody: 'Christian - noticed Frigade is growing fast. Teams like yours use us to enrich leads.',
+      fromEmail: 'brian@datavendor.com', subject: 'Acme + DataVendor',
+      plainBody: 'Sam - noticed Acme is growing fast. Teams like yours use us to enrich leads.',
       headers: { 'x-mailer': 'Outreach', 'message-id': '<1234.abc@outreach.io>' },
     }),
   },
@@ -102,7 +102,7 @@ export const FIXTURES: Fixture[] = [
     cold: true,
     email: mk({
       fromEmail: 'ava@hiringstack.com', subject: 'Congrats on the launch',
-      plainBody: 'Christian, congrats on the launch last week. Curious how you are thinking about scaling support - we have been helping a few YC companies with exactly that. Any interest?',
+      plainBody: 'Sam, congrats on the launch last week. Curious how you are thinking about scaling support - we have been helping a few YC companies with exactly that. Any interest?',
     }),
   },
 
@@ -112,7 +112,7 @@ export const FIXTURES: Fixture[] = [
     email: mk({
       fromName: 'ByteRoute', fromEmail: 'hello@byteroute.example', subject: 'Partnership proposal for your project',
       plainBody: "Hello team,\n\nThis is Mei with ByteRoute. We offer discounted access to the major LLM APIs behind one endpoint.\n\nWe would like to sponsor your docs for a month. Proposed terms: $100 flat, or $40 fixed plus 10% of net revenue from referred users.\n\nCould you share your monthly visitors and where most of your audience is located?\n\nA free credits account is already set up for you.\n\nMei",
-      headers: { 'list-id': '<support.frigade.com>', precedence: 'list', 'x-google-group-id': '123', 'mailing-list': 'list support@frigade.com; contact support+owners@frigade.com' },
+      headers: { 'list-id': '<support.acme.dev>', precedence: 'list', 'x-google-group-id': '123', 'mailing-list': 'list support@acme.dev; contact support+owners@acme.dev' },
     }),
   },
   {
@@ -121,7 +121,7 @@ export const FIXTURES: Fixture[] = [
     email: mk({
       fromName: 'Lena', fromEmail: 'lena@adnetwork.example', subject: 'Monetize your traffic',
       plainBody: "Hi there, I'm Lena from AdNetwork. We provide paid placement for developer tools. Would you be open to discussing a partnership? Our partners earn 30% commission on every signup.",
-      headers: { 'list-id': '<hello.frigade.com>', precedence: 'list', 'x-original-sender': 'lena@adnetwork.example' },
+      headers: { 'list-id': '<hello.acme.dev>', precedence: 'list', 'x-original-sender': 'lena@adnetwork.example' },
     }),
   },
 
@@ -132,7 +132,7 @@ export const FIXTURES: Fixture[] = [
     email: mk({
       fromEmail: 'ops@customer-two.example', subject: 'Checklist progress not saving',
       plainBody: 'Hi, since yesterday our onboarding checklist resets for some users after refresh. We are on the React SDK v2. Can you take a look?',
-      headers: { 'list-id': '<support.frigade.com>', precedence: 'list', 'x-google-group-id': '123' },
+      headers: { 'list-id': '<support.acme.dev>', precedence: 'list', 'x-google-group-id': '123' },
     }),
   },
   {
@@ -140,7 +140,7 @@ export const FIXTURES: Fixture[] = [
     cold: false,
     email: mk({
       fromEmail: 'dana@acme-retail.example', subject: 'SSO on the enterprise plan?',
-      plainBody: "Hi, I'm Dana from Acme Retail. We're evaluating Frigade for our onboarding and wanted to know if SSO is included on the enterprise plan for about 200 seats.",
+      plainBody: "Hi, I'm Dana from Acme Retail. We're evaluating Acme for our onboarding and wanted to know if SSO is included on the enterprise plan for about 200 seats.",
     }),
   },
   {
@@ -171,8 +171,8 @@ export const FIXTURES: Fixture[] = [
     name: 'intro from mutual',
     cold: false,
     email: mk({
-      fromEmail: 'maria@acme.com', subject: 'Intro: Christian <> Dana',
-      plainBody: "Christian, meet Dana, she leads product at Acme and asked about onboarding. Dana, Christian is the founder of Frigade. I'll let you two take it from here!",
+      fromEmail: 'maria@acme.com', subject: 'Intro: Sam <> Dana',
+      plainBody: "Sam, meet Dana, she leads product at Acme and asked about onboarding. Dana, Sam is the founder of Acme. I'll let you two take it from here!",
     }),
   },
   {
@@ -219,7 +219,7 @@ export const FIXTURES: Fixture[] = [
     name: 'calendly from known contact flow (no other signal)',
     cold: false,
     email: mk({
-      fromEmail: 'candidate@gmail.com', subject: 'Re: Frigade engineering role',
+      fromEmail: 'candidate@gmail.com', subject: 'Re: Acme engineering role',
       plainBody: 'Thanks for reaching out! Here is my calendly: https://calendly.com/candidate/30min',
     }),
   },
