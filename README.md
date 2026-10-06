@@ -108,4 +108,8 @@ npm run push      # build and upload to your Apps Script project
 
 The logic (rules and pipeline) is in `src/core`, the AI calls are in `src/providers`, the Gmail code is in `src/gas`, and the settings page is `src/ui/Settings.html`. If a sales tool is slipping through, add its domains to `src/core/fingerprints.ts`.
 
+## Who made this
+
+Built by the team at [Frigade](https://frigade.com). We mostly build an AI assistant that lives in your product, learns it end to end, and answers questions and takes actions for your users. Turns out we also get a lot of cold email.
+
 MIT licensed.
